@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Tarefas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Lista de Tarefas</h1>
+    <p>Adicione suas tarefas!</p>
+    <input type="text" id="inputTarefa" placeholder="Digite sua tarefa">
+    <button onclick="adicionarTarefa()">Adicionar Tarefa</button>
+    <button class="botao_lista"   onclick="limparLista()">Limpar tudo</button>
+    <ul id="listaTarefas"></ul>
+    <p id="mensagem"></p>
+  </div>
+
+  <script>
+let tarefas = JSON.parse(localStorage.getItem("tarefas")) || []
+
+// ===============================
+// SALVAR
+// ===============================
+function salvarTarefas() {
+  localStorage.setItem("tarefas", JSON.stringify(tarefas))
+}
+
+// ===============================
+// ADICIONAR TAREFA
+// ===============================
+function adicionarTarefa() {
+
+    const inputTarefa = document.getElementById("inputTarefa")
+    let texto = inputTarefa.value.trim()
+
+    const mensagem = document.getElementById("mensagem")
+
+    if (texto == "") {
+      mensagem.textContent = "Digite alguma coisa para adicionar uma tarefa"
+      return
+    }
+
+    // pegar data e hora atual
+    let agora = new Date()
+
+    let data = agora.toLocaleDateString("pt-BR")
+    let hora = agora.toLocaleTimeString("pt-BR", {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    let novaTarefa = {
+      texto: texto,
+      data: data,
+      hora: hora,
+      concluida: false // <-- ADICIONADO: Propriedade para controlar o status
+    }
+
+    tarefas.push(novaTarefa)
+    salvarTarefas()
+    renderizarTarefas()
+
+    mensagem.textContent = "Tarefa adicionada com sucesso"
+    inputTarefa.value = ""
+}
+
+// ===============================
+// RENDERIZAR
+// ===============================
+function renderizarTarefas () {
+  const listaTarefas = document.getElementById("listaTarefas")
+  listaTarefas.innerHTML = ""
+
+  // <-- ADICIONADO: Ordena a lista (Pendentes primeiro, concluídas no final)
+  // Como o JavaScript mantém a ordem estável, a ordem original de data e hora é preservada
+  tarefas.sort((a, b) => {
+    if (a.concluida === b.concluida) return 0;
+    return a.concluida ? 1 : -1;
+  });
+
+  for(let i = 0; i < tarefas.length; i++) {
+
+    let novaTarefa = document.createElement("li")
+    novaTarefa.className = "item-tarefa"
+
+    // <-- ADICIONADO: CHECKBOX
+    let checkbox = document.createElement("input")
+    checkbox.type = "checkbox"
+    checkbox.checked = tarefas[i].concluida // Marca se estiver concluída
+    checkbox.onchange = () => alternarStatus(i) // Chama função ao clicar
+
+    // TEXTO
+    let texto = document.createElement("span")
+    texto.textContent = tarefas[i].texto
+
+    // <-- ADICIONADO: Risco na palavra se estiver concluída
+    if (tarefas[i].concluida) {
+      texto.style.textDecoration = "line-through"
+      texto.style.opacity = "0.6" // Deixa o texto um pouco mais apagado
+    }
+
+    // BOTÃO REMOVER (seu código original)
+    let botaoRemover = document.createElement("button")
+    botaoRemover.textContent = "Remover"
+    botaoRemover.className = "remover"
+    botaoRemover.onclick = () => removerTarefa(i)
+
+    // BOTÃO EDITAR (seu código original)
+    let botaoEditar = document.createElement("button")
+    botaoEditar.textContent = "Editar"
+    botaoEditar.className = "editar"
+    botaoEditar.onclick = () => editarTarefa(i)
+
+    // DATA E HORA
+    let dataHora = document.createElement("span")
+    dataHora.className = "data-hora"
+    dataHora.textContent = `${tarefas[i].data} • ${tarefas[i].hora}`
+
+    // ORDEM CORRETA:
+    // checkbox | texto | editar | remover | data
+    novaTarefa.appendChild(checkbox) // <-- Inserido o checkbox aqui
+    novaTarefa.appendChild(texto)
+    novaTarefa.appendChild(botaoEditar)
+    novaTarefa.appendChild(botaoRemover)
+    novaTarefa.appendChild(dataHora)
+
+    listaTarefas.appendChild(novaTarefa)
+  }
+}
+
+// ===============================
+// ALTERNAR STATUS (NOVO)
+// ===============================
+function alternarStatus(i) {
+  tarefas[i].concluida = !tarefas[i].concluida // Inverte o status (true vira false, false vira true)
+  salvarTarefas()
+  renderizarTarefas()
+}
+
+// ===============================
+// REMOVER
+// ===============================
+function removerTarefa (i) {
+  tarefas.splice(i, 1)
+  salvarTarefas()
+  renderizarTarefas()
+}
+
+// ===============================
+// EDITAR (mantém data original)
+// ===============================
+function editarTarefa(i) {
+  let tarefaEditada = prompt("Edite a tarefa:", tarefas[i].texto)
+
+  if (tarefaEditada !== null && tarefaEditada.trim() !== "") {
+      tarefas[i].texto = tarefaEditada.trim()
+      salvarTarefas()
+      renderizarTarefas()
+  }
+}
+
+// ===============================
+// LIMPAR
+// ===============================
+function limparLista() {
+  const mensagem = document.getElementById("mensagem")
+
+  if (tarefas.length === 0) {
+    mensagem.textContent = "Nada para excluir"
+  } else {
+    tarefas = []
+    salvarTarefas()
+    renderizarTarefas()
+    mensagem.textContent = "Lista limpa com sucesso"
+  }
+}
+
+// ===============================
+// INICIAR
+// ===============================
+renderizarTarefas()
+
+</script>
+</body>
+</html>
